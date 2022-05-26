@@ -19,15 +19,13 @@ const port = 3000;
 
 // 단건조회
 app.get("/wise-sayings/random", async (req, res) => {
-  const { id } = req.params;
   const [[wiseSayingRow]] = await pool.query(
     `
     SELECT *
     FROM wise_saying
     ORDER BY RAND()
     LIMIT 1
-    `,
-    [id]
+    `
   );
 
   if (wiseSayingRow == undefined) {
@@ -38,6 +36,19 @@ app.get("/wise-sayings/random", async (req, res) => {
     return;
   }
 
+  // 조회수 증가
+  wiseSayingRow.hitCount++; // hitCount 증가를 먼저 시킨 후에 증가 된 값인 wiseSayingRow.hitCount를 넣음
+  // UPDATE로 hitCount = hitCount + 1 한 다음에 wiseSayingRow.hitCount++;를 나중에 적어도 됨
+
+  await pool.query(
+    `
+    UPDATE wise_saying
+    SET hitCount = ?
+    WHERE id = ?
+    `,
+    [wiseSayingRow.hitCount, wiseSayingRow.id]
+  );
+
   res.json({
     resultCode: "S-1",
     msg: "성공",
@@ -46,5 +57,5 @@ app.get("/wise-sayings/random", async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`wise saying app listening on port ${port}`);
 });
